@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cleanup-plan.schema.json",
+  "title": "Windows Disk Cleanup Plan",
+  "description": "清理计划 JSON 结构。由 Invoke-DiskAudit.ps1 生成草稿（全部目标 ApprovalStatus=Pending），用户确认审批后由调用方更新为 Approved，再由 Invoke-DiskCleanup.ps1 校验并执行。",
+  "type": "object",
+  "required": [
+    "PlanId", "Version", "CreatedAt", "SystemDrive", "AuditMode", "ScanScope", "ScanRoots",
+    "Baseline", "Candidates", "SpecialConsumers", "CrossCheck", "RawUninstallRecords",
+    "Targets", "Observability"
+  ],
+  "properties": {
+    "PlanId": {
+      "type": "string",
+      "description": "唯一计划 ID，建议格式 plan-YYYYMMDDHHmmss-<8位hex>"
+    },
+    "Version": {
+      "const": "1.0"
+    },
+    "CreatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "SystemDrive": {
+      "type": "string",
+      "pattern": "^[A-Z]:$|^C:$"
+    },
+    "AuditMode": {
+      "enum": ["Admin", "CurrentUser-Incomplete"]
+    },
+    "ScanScope": {
+      "enum": ["CurrentUser", "AllUsers"]
+    },
+    "ScanRoots": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "实际参与递归扫描的最外层根目录（已去重）"
+    },
+    "UserProfile": {
+      "type": "string",
+      "description": "当前被审计用户的完整配置目录路径，如 C:\\Users\\<用户名>"
+    },
+    "Baseline": {
+      "type": "object",
+      "required": ["OSVersion", "SystemDrive", "TotalGB", "FreeGB", "IsAdmin", "Scope", "SpecialFiles"],
+      "properties": {
+        "OSVersion": { "type": "string" },
+        "OSCaption": { "type": "string" },
+        "SystemDrive": { "type": "string" },
+        "TotalGB": { "type": "number" },
+        "FreeGB": { "type": "number" },
+        "IsAdmin": { "type": "boolean" },
+        "Scope": { "type": "string" },
+        "SpecialFiles": {
+          "type": "object",
+          "description": "hiberfil/pagefile/swapfile 探测结果"
+        }
+      }
+    },
+    "Candidates": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Candidate" }
+    },
+    "SpecialConsumers": {
+      "type": "array",
+      "description": "Windows.old、VHDX、阴影存储、Windows Installer 孤儿 MSP 等只报告项"
+    },
+    "CrossCheck": {
+      "type": "object",
+      "description": "服务、计划任务、自启动、Uninstall 孤儿的交叉核对结果"
+    },
+    "RawUninstallRecords": {
+      "type": "array",
+      "description": "保留的原始卸载注册表记录（含 SystemComponent/WindowsInstaller/PatchOrChild/UpdateOrKB 标记）"
+    },
+    "Targets": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Target" },
+      "description": "清理目标列表。Audit 阶段生成时全部为 Pending；用户逐项授权后对应条目改为 Approved 并填写 ApprovedOperation。"
+    },
+    "Observability": {
+      "type": "object",
+      "description": "扫描错误、重解析点跳过、云端占位排除数、大小估算说明"
+    }
+  },
+  "definitions": {
+    "Candidate": {
+      "type": "object",
+      "required": ["Path", "EstimatedLogicalSizeBytes", "Evidence", "Confidence", "RiskLevel", "DataClassification", "Bucket", "RecommendedAction", "RequiresConfirmation", "Reversible"],
+      "properties": {
+        "Path": { "type": "string" },
+        "EstimatedLogicalSizeBytes": { "type": "integer" },
+        "Evidence": { "type": "array", "items": { "type": "string" } },
+        "Confidence": { "enum": ["Low", "Medium", "High"] },
+        "RiskLevel": { "enum": ["Low", "Medium", "High"] },
+        "DataClassification": { "enum": ["Cache", "Data", "Mixed"] },
+        "Bucket": { "enum": ["A", "B", "C"] },
+        "RecommendedAction": { "type": "string" },
+        "RequiresConfirmation": { "type": "boolean" },
+        "Reversible": { "type": "boolean" }
+      }
+    },
+    "Target": {
+      "type": "object",
+      "required": ["Path", "Operation", "EstimatedLogicalSizeBytes", "Justification", "RiskLevel", "Bucket", "ApprovalStatus", "ApprovedOperation", "RequiresConfirmation", "Reversible"],
+      "properties": {
+        "Path": { "type": "string", "description": "精确规范化路径（绝对路径，不得包含 .. 穿越）" },
+        "Operation": {
+          "enum": ["CleanCacheSubdirs", "Quarantine", "Delete", "StopService", "RemoveScheduledTask", "RemoveAutorun", "Uninstall"],
+          "description": "计划的操作类型。CleanCacheSubdirs 只清除目标下已知可再生的缓存子目录，不动数据。注意：v1.0 执行器将 StopService / RemoveScheduledTask / RemoveAutorun 视为 report-only（服务/计划任务/自启动配置需人工处理），收到这些操作时会拒绝执行并报告原因。"
+        },
+        "EstimatedLogicalSizeBytes": { "type": "integer" },
+        "Justification": { "type": "string", "description": "分类依据/证据摘要" },
+        "RiskLevel": { "enum": ["Low", "Medium", "High"] },
+        "Bucket": { "enum": ["A", "B", "C"] },
+        "ApprovalStatus": {
+          "enum": ["Pending", "Approved", "Rejected"],
+          "description": "Pending=待用户授权；Approved=已针对该具体路径+该具体操作授权；Rejected=用户明确拒绝。"
+        },
+        "ApprovedOperation": {
+          "type": "string",
+          "enum": ["", "CleanCacheSubdirs", "Quarantine", "Delete", "StopService", "RemoveScheduledTask", "RemoveAutorun", "Uninstall"],
+          "description": "用户实际批准的操作。与 Operation 不一致时以 ApprovedOperation 为准执行。授权不得扩展到未批准的子目录或操作。"
+        },
+        "RequiresConfirmation": { "type": "boolean" },
+        "Reversible": { "type": "boolean" }
+      }
+    }
+  }
+}

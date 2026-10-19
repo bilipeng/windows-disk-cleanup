@@ -1,0 +1,8 @@
+{
+  "name": "windows-disk-cleanup",
+  "version": "1.0.0",
+  "description": "Read-only Windows system-drive audit with per-target authorization, transactional quarantine, and a deep scanner for caches, junk files, large files, developer caches, bundled software and installation residue.",
+  "author": {
+    "name": "bilipeng"
+  }
+}
