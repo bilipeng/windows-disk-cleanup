@@ -1,0 +1,13 @@
+{
+  "name": "bilipeng-windows-tools",
+  "description": "Safety-first Windows maintenance skills for Claude Code.",
+  "owner": {
+    "name": "bilipeng"
+  },
+  "plugins": [
+    {
+      "name": "windows-disk-cleanup",
+      "source": "./"
+    }
+  ]
+}
