@@ -94,6 +94,25 @@ Copy-Item -Recurse .\windows-disk-cleanup\skills\windows-disk-cleanup $env:USERP
 
 ---
 
+## 不用 Claude、或换用其他 AI 工具
+
+脚本是纯 PowerShell，**不依赖任何 AI**：
+
+- **双击 `Start-Cleanup.cmd`**：交互式向导，自动扫描、编号列出候选、让你选择、预览后再隔离。报告写入 `%USERPROFILE%\disk-cleanup-reports`。
+- **Codex 等编码 agent**：让它先读 [`AGENTS.md`](AGENTS.md)，里面规定了“扫描 → 报告 → 用户确认 → DryRun → 执行”的强制顺序。
+- **通用 skills 安装器**：仓库根目录有 `SKILL.md`，支持读取根级技能的安装器（例如 `npx skills add bilipeng/windows-disk-cleanup`）可以直接识别。
+- **豆包、ChatGPT 等纯对话助手**：它们不能执行本地 PowerShell。但向导会生成 `report-*.md`，你可以把它上传给豆包，让豆包解释报告内容；真正的扫描和清理必须在你的电脑上通过向导或脚本完成。
+
+### 给非 AI 用户的最短路径
+
+```powershell
+git clone https://github.com/bilipeng/windows-disk-cleanup
+cd windows-disk-cleanup
+.\Start-Cleanup.cmd
+```
+
+向导会提示是否以管理员身份重启（推荐），随后自动完成扫描、选择、预览和执行。
+
 ## 使用
 
 直接用自然语言触发：

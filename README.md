@@ -48,6 +48,24 @@ git clone https://github.com/bilipeng/windows-disk-cleanup
 Copy-Item -Recurse .\windows-disk-cleanup\skills\windows-disk-cleanup $env:USERPROFILE\.claude\skills\
 ```
 
+## Use without Claude / with other agents
+
+The scripts are plain PowerShell and do not depend on any AI:
+
+- **Double-click `Start-Cleanup.cmd`** — an interactive wizard that scans,
+  lists candidates with numbers, asks what to clean, previews, and only then
+  quarantines. It writes `report-*.md` and JSON files to
+  `%USERPROFILE%\disk-cleanup-reports`.
+- **Codex and other coding agents** — point them at [`AGENTS.md`](AGENTS.md),
+  which defines the required scan → report → confirm → DryRun → execute order.
+- **Generic skill installers** — the repository root contains a `SKILL.md`, so
+  tools that install a root-level skill (for example `npx skills add
+  bilipeng/windows-disk-cleanup`) can pick it up.
+- **Chat-only assistants** (Doubao, ChatGPT, etc.) cannot execute local
+  PowerShell. They can still explain the generated `report-*.md` if you upload
+  it; the actual scan and cleanup must run on the machine via the wizard or the
+  scripts.
+
 ## Usage
 
 Ask Claude:
