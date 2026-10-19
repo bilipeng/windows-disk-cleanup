@@ -2,6 +2,8 @@
 
 A safety-first Windows disk audit and cleanup skill for Claude Code.
 
+[中文说明](README.zh-CN.md)
+
 Read-only by default, per-target authorization, transactional quarantine with
 rollback, and coverage accounting so "no findings" never means "didn't scan".
 
